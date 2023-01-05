@@ -154,6 +154,8 @@ void stage11(){
 }
 
 void draw(int i){
+    printf("\n");
+    
     switch (i)
     {
     case 1:
