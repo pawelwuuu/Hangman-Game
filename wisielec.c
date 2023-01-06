@@ -9,13 +9,12 @@
 typedef struct
 {
 	char nickname[21];
-	char gameResult[10];
+	char gameResult[9];
 	char guessWord[maxWordLen];
 	char usedChars[60];
 	bool isOn;
 	int attempts;
 	int badAnswers;
-	int guessesInRow;
 	char userProgress[maxWordLen];
 }TGame;
 
@@ -28,25 +27,41 @@ TGame initGame(const char *);
 bool isUsed(TGame*, char c);
 void printRevealed(TGame*);
 void updateGameSt(TGame*);
+void saveStat(TGame*);
+void printStat();
+void winKeeper();
+
 
 int main(int argc, char **argv)
 {
 	int lineToRead = getRandomNum();
 	char *guessWord;
 	readLine("words.txt", lineToRead, guessWord);
-	if (guessWord == NULL)
+	if (guessWord[0] == 0)
 	{
 		printf("Blad, nie udalo sie odczytac pliku.\n");
+		winKeeper();
 		return 1;
 	}
 
 	TGame game = initGame(guessWord);
 	gameplay(&game);
 
-	printf("\nAby wyjsc wpisz jakis przycisk: ");
-	scanf("%s");
+	printf("Aby wywietlic statystki wpisz 's' lub inny znak aby wyjsc.\n");
+	char userChc;
 
-	// printf("nick:%s zgadywanie:%s proby:%d jak:%s ciag:%d to dane", game.nickname, game.guessWord, game.attempts, game.gameResult, game.guessesInRow);
+	fflush(stdin);
+	scanf("%c", &userChc);
+	if (userChc == 's'){
+		printStat();
+	}else{
+		saveStat(&game);
+		return 0;
+	}
+
+	saveStat(&game);
+	winKeeper();
+
 
 	return 0;
 }
@@ -56,7 +71,7 @@ void readLine(const char *filename, int n, char *toSave)
 	FILE *file = fopen(filename, "r");
 	if (file == NULL)
 	{
-		*toSave = NULL;
+		toSave[0] = 0;
 		return;
 	}
 
@@ -67,11 +82,12 @@ void readLine(const char *filename, int n, char *toSave)
 		if (fgets(word, maxWordLen, file) == NULL)
 		{
 			fclose(file);
-			*toSave = NULL;
+			toSave[0] = 0;
 			return;
 		}
 	}
   
+	word[strlen(word) - 1] = 0;
 	fclose(file);
 	strcpy(toSave, word);
 }
@@ -85,18 +101,17 @@ int getRandomNum()
 
 TGame initGame(const char *guessWord)
 {
-	char nickname[21] = "";
-	printf("Podaj swoj nick, moze miec maksymalnie 21 znakow oraz tylko polskie znaki: \n");
-	scanf("%21s", &nickname);
+	char nickname[21];
+	printf("Podaj swoj nick, moze miec maksymalnie 20 znakow oraz tylko polskie znaki: \n");
+	scanf("%20s", &nickname);
 
 	TGame game = {};
 
 	strcpy(game.nickname, nickname);
-	strcpy(game.gameResult, "Undefined");
+	strcpy(game.gameResult, "Brak");
 	strcpy(game.guessWord, guessWord);
 	game.isOn = true;
 	game.attempts = 0;
-	game.guessesInRow = 0;
 	game.badAnswers = 0;
 	for (int i = 0; guessWord[i] != 0; i++)
 	{
@@ -107,6 +122,8 @@ TGame initGame(const char *guessWord)
 }
 
 void checkGuess(TGame *game, char userGuess){
+	game -> attempts++;
+
 	bool isPresent = false;
 	for (int i = 0; game -> guessWord[i] != 0; i++){
 		if ((game -> guessWord[i] == userGuess) && (game -> userProgress[i] == '_')){
@@ -143,16 +160,16 @@ void printRevealed(TGame *game){
 void updateGameSt(TGame *game){
 	if (strcmp(game -> userProgress, game -> guessWord) == 0){
 		game -> isOn = false;
-		strcpy(game -> gameResult, "WIN");
+		strcpy(game -> gameResult, "Wygrana");
 		system("cls");
 		draw(game -> badAnswers);
-		printf("WYGRALES! :D");
+		printf("WYGRALES! :D\n");
 	} else if (game -> badAnswers > 10){
 		game -> isOn = false;
-		strcpy(game -> gameResult, "LOSE");
+		strcpy(game -> gameResult, "Przegrana");
 		system("cls");
 		draw(game -> badAnswers);
-		printf("PRZEGRALES :(\nTwoje slowo to %s", game -> guessWord);
+		printf("Przegrana :(\nTwoje slowo to '%s'.\n", game -> guessWord);
 
 	}
 }
@@ -176,6 +193,11 @@ void gameplay(TGame *game){
 		printf("Podaj znak: ");
 		fflush(stdin);
 		scanf("%c", &userGuess);
+		if (userGuess == 10){
+			printf("Niedozwolony znak.");
+			continue;
+		}
+			
 		wasChrUsed = isUsed(game, userGuess);
 		if (wasChrUsed)
 			continue;
@@ -183,4 +205,47 @@ void gameplay(TGame *game){
 		checkGuess(game, userGuess);
 		updateGameSt(game);
 	}
+}
+
+void saveStat(TGame *game){
+    FILE *file = fopen("statistics.txt", "a");
+    fprintf(file, "%s %s %s %s %d %d %s\n", 
+    game -> nickname, game -> gameResult, game -> guessWord,
+    game -> usedChars, game-> attempts,
+    game -> badAnswers, game -> userProgress);
+
+	fclose(file);
+}
+
+void printStat(){
+	FILE *file = fopen("statistics.txt", "r");
+	if (file == NULL){
+		printf("Plik ze statystykami jeszcze nie istnieje, rozegraj wiecej rozgrywek.");
+		fclose(file);
+		return;
+	}
+
+	printf("Statystyki wygladaja nastepujaco:\n");
+
+	char nickname[21];
+	char gameResult[10];
+	char guessWord[maxWordLen];
+	char usedChars[60];
+	int attempts;
+	int badAnswers;
+	char userProgress[maxWordLen];
+	while (fscanf(file, "%s %s %s %s %d %d %s", nickname, gameResult, guessWord, usedChars, &attempts, &badAnswers, userProgress) == 7)
+	{
+		printf("------------------------\n");
+		printf("Pseudonim: %s\nWynik gry: %s\nSlowo do odgadniecia: %s\nUzyte znaki: %s\nWszystkich odpowiedzi: %d\nBlednych odpowiedzi: %d\nPlansza gracza: %s\n", 
+		nickname, gameResult, guessWord, usedChars, attempts, badAnswers, userProgress);
+		printf("------------------------\n");
+	}
+
+	fclose(file);
+}
+
+void winKeeper(){
+	printf("\nAby wyjsc wpisz jakis przycisk: ");
+	scanf("%s");
 }
