@@ -43,6 +43,9 @@ int main(int argc, char **argv)
 	TGame game = initGame(guessWord);
 	gameplay(&game);
 
+	printf("\nAby wyjsc wpisz jakis przycisk: ");
+	scanf("%s");
+
 	// printf("nick:%s zgadywanie:%s proby:%d jak:%s ciag:%d to dane", game.nickname, game.guessWord, game.attempts, game.gameResult, game.guessesInRow);
 
 	return 0;
@@ -82,9 +85,9 @@ int getRandomNum()
 
 TGame initGame(const char *guessWord)
 {
-	char nickname[21];
+	char nickname[21] = "";
 	printf("Podaj swoj nick, moze miec maksymalnie 21 znakow oraz tylko polskie znaki: \n");
-	scanf("%s", &nickname);
+	scanf("%21s", &nickname);
 
 	TGame game = {};
 
@@ -106,9 +109,6 @@ TGame initGame(const char *guessWord)
 void checkGuess(TGame *game, char userGuess){
 	bool isPresent = false;
 	for (int i = 0; game -> guessWord[i] != 0; i++){
-		// char a = game -> guessWord[i];
-		// char c = game -> userProgress[i];
-
 		if ((game -> guessWord[i] == userGuess) && (game -> userProgress[i] == '_')){
 			game -> userProgress[i] = userGuess;
 			isPresent = true;
@@ -144,35 +144,43 @@ void updateGameSt(TGame *game){
 	if (strcmp(game -> userProgress, game -> guessWord) == 0){
 		game -> isOn = false;
 		strcpy(game -> gameResult, "WIN");
+		system("cls");
+		draw(game -> badAnswers);
 		printf("WYGRALES! :D");
 	} else if (game -> badAnswers > 10){
 		game -> isOn = false;
 		strcpy(game -> gameResult, "LOSE");
-		printf("PRZEGRALES :(");
+		system("cls");
+		draw(game -> badAnswers);
+		printf("PRZEGRALES :(\nTwoje slowo to %s", game -> guessWord);
+
 	}
 }
 
 void gameplay(TGame *game){
 	printf("Twoje slowo ma %d liter, sprobuj je odgadnac:\n", strlen(game -> guessWord));
-	while(game -> isOn){
-		char userGuess;
-		printf("Podaj znak:\n");
-		fflush(stdin);
-		scanf("%c", &userGuess);
-		if (isUsed(game, userGuess)){
-			printf("Uzyles juz znaku '%c'.\n", userGuess);
-			continue;
-		}
 
-		checkGuess(game, userGuess);
+	bool wasChrUsed = false;
+	while(game -> isOn){
+		system("cls");
 
 		if (game -> badAnswers > 0)
 			draw(game -> badAnswers);
-		
+
 		printRevealed(game);
+		if (wasChrUsed){
+			printf("Uzyles juz tego znaku.\n");
+		}
 
+		char userGuess;
+		printf("Podaj znak: ");
+		fflush(stdin);
+		scanf("%c", &userGuess);
+		wasChrUsed = isUsed(game, userGuess);
+		if (wasChrUsed)
+			continue;
+
+		checkGuess(game, userGuess);
 		updateGameSt(game);
-
-		
 	}
 }
