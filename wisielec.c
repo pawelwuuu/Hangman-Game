@@ -9,7 +9,7 @@
 typedef struct
 {
 	char nickname[21];
-	char gameResult[9];
+	char gameResult[10];
 	char guessWord[maxWordLen];
 	char usedChars[60];
 	bool isOn;
@@ -17,7 +17,6 @@ typedef struct
 	int badAnswers;
 	char userProgress[maxWordLen];
 }TGame;
-
 
 void readLine(const char *, int, char *);
 int getRandomNum();
@@ -30,7 +29,7 @@ void updateGameSt(TGame*);
 void saveStat(TGame*);
 void printStat();
 void winKeeper();
-
+void initStat(TGame*);
 
 int main(int argc, char **argv)
 {
@@ -45,23 +44,10 @@ int main(int argc, char **argv)
 	}
 
 	TGame game = initGame(guessWord);
+
 	gameplay(&game);
 
-	printf("Aby wywietlic statystki wpisz 's' lub inny znak aby wyjsc.\n");
-	char userChc;
-
-	fflush(stdin);
-	scanf("%c", &userChc);
-	if (userChc == 's'){
-		printStat();
-	}else{
-		saveStat(&game);
-		return 0;
-	}
-
-	saveStat(&game);
-	winKeeper();
-
+	initStat(&game);
 
 	return 0;
 }
@@ -131,6 +117,7 @@ void checkGuess(TGame *game, char userGuess){
 			isPresent = true;
 		}
 	}
+
 	if (! isPresent)
 		game -> badAnswers++;
 }
@@ -162,21 +149,20 @@ void updateGameSt(TGame *game){
 		game -> isOn = false;
 		strcpy(game -> gameResult, "Wygrana");
 		system("cls");
-		draw(game -> badAnswers);
+		if ((game-> badAnswers > 0) && (game -> badAnswers < 12))
+			draw(game -> badAnswers);
 		printf("WYGRALES! :D\n");
 	} else if (game -> badAnswers > 10){
 		game -> isOn = false;
 		strcpy(game -> gameResult, "Przegrana");
 		system("cls");
-		draw(game -> badAnswers);
+		if ((game-> badAnswers > 0) && (game -> badAnswers < 12))
+			draw(game -> badAnswers);
 		printf("Przegrana :(\nTwoje slowo to '%s'.\n", game -> guessWord);
-
 	}
 }
 
 void gameplay(TGame *game){
-	printf("Twoje slowo ma %d liter, sprobuj je odgadnac:\n", strlen(game -> guessWord));
-
 	bool wasChrUsed = false;
 	while(game -> isOn){
 		system("cls");
@@ -193,10 +179,8 @@ void gameplay(TGame *game){
 		printf("Podaj znak: ");
 		fflush(stdin);
 		scanf("%c", &userGuess);
-		if (userGuess == 10){
-			printf("Niedozwolony znak.");
-			continue;
-		}
+		if (userGuess == 10)
+			continue;	
 			
 		wasChrUsed = isUsed(game, userGuess);
 		if (wasChrUsed)
@@ -234,7 +218,7 @@ void printStat(){
 	int attempts;
 	int badAnswers;
 	char userProgress[maxWordLen];
-	while (fscanf(file, "%s %s %s %s %d %d %s", nickname, gameResult, guessWord, usedChars, &attempts, &badAnswers, userProgress) == 7)
+	while (fscanf(file, "%s %s %s %s %d %d %s",nickname, gameResult, guessWord, usedChars, &attempts, &badAnswers, userProgress) == 7)
 	{
 		printf("------------------------\n");
 		printf("Pseudonim: %s\nWynik gry: %s\nSlowo do odgadniecia: %s\nUzyte znaki: %s\nWszystkich odpowiedzi: %d\nBlednych odpowiedzi: %d\nPlansza gracza: %s\n", 
@@ -246,6 +230,23 @@ void printStat(){
 }
 
 void winKeeper(){
-	printf("\nAby wyjsc wpisz jakis przycisk: ");
+	printf("\nAby wyjsc wpisz jakis znak: ");
 	scanf("%s");
+}
+
+void initStat(TGame *game){
+	saveStat(game);
+	printf("Aby wyswietlic statystki wpisz 's' albo inny znak zeby wyjsc.\n");
+	char userChc;
+
+	fflush(stdin);
+	scanf("%c", &userChc);
+	if (userChc == 's'){
+		printStat();
+	}else{
+		saveStat(game);
+		return;
+	}
+
+	winKeeper();
 }
