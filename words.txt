@@ -40,7 +40,7 @@ ryba
 kurczak
 indyk
 kaczka
-gesa
+autokar
 krolik
 kot
 pies
