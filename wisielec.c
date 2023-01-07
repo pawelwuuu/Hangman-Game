@@ -235,7 +235,6 @@ void winKeeper(){
 }
 
 void initStat(TGame *game){
-	saveStat(game);
 	printf("Aby wyswietlic statystki wpisz 's' albo inny znak zeby wyjsc.\n");
 	char userChc;
 
@@ -248,5 +247,6 @@ void initStat(TGame *game){
 		return;
 	}
 
+	saveStat(game);
 	winKeeper();
 }
